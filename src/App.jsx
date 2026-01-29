@@ -1,52 +1,47 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Groq from 'groq-sdk';
 
+// Initialize Groq SDK
+// Note: Ensure VITE_GROQ_API_KEY is set in your Vercel Environment Variables
 const groq = new Groq({
   apiKey: import.meta.env.VITE_GROQ_API_KEY,
   dangerouslyAllowBrowser: true 
 });
 
-// NEW: Real Media Renderer Component
-const MediaRenderer = ({ type, prompt }) => {
-  if (type === 'image') {
-    // REAL Image Generation via Pollinations (No Key Required)
-    const imageUrl = `https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=1024&height=1024&seed=${Math.floor(Math.random() * 1000000)}&nologo=true`;
-    return (
-      <div className="media-container">
-        <img src={imageUrl} alt={prompt} loading="lazy" />
-        <div className="media-info">
-          <span>GEN_TYPE: IMAGE</span>
-          <a href={imageUrl} target="_blank" className="badge badge-image">DOWNLOAD</a>
-        </div>
-      </div>
-    );
-  }
+// Component to render real-time generated images
+const MediaRenderer = ({ prompt }) => {
+  // Pollinations.ai generates real images based on the prompt provided by the AI
+  const imageUrl = `https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=1024&height=1024&seed=${Math.floor(Math.random() * 1000000)}&nologo=true`;
   
-  if (type === 'video') {
-    return (
-      <div className="media-container">
-        <div style={{padding: '20px', textAlign: 'center'}}>
-          <p>🎥 VIDEO_LINK_STABILIZING...</p>
-          <small>Prompt: {prompt}</small>
-        </div>
-        <div className="media-info">
-          <span className="badge badge-video">VIDEO_GEN_ACTIVE</span>
-        </div>
+  return (
+    <div className="media-container">
+      <img src={imageUrl} alt={prompt} loading="lazy" />
+      <div className="media-info">
+        <span>GEN_TYPE: ART_ENGINE_V1</span>
+        <a href={imageUrl} target="_blank" rel="noreferrer" className="badge-image">
+          OPEN_HD
+        </a>
       </div>
-    );
-  }
-  return null;
+    </div>
+  );
 };
 
 const App = () => {
   const [messages, setMessages] = useState([
-    { role: 'assistant', content: 'SYSTEM_LINK: ONLINE. Epic Tech AI media engine ready. Type "generate image of..." or "create video of..."' }
+    { 
+      role: 'assistant', 
+      content: 'SYSTEM_LINK: ONLINE. Epic Tech AI active. I can chat or generate high-fidelity art. Try: "Generate a cyberpunk oasis."' 
+    }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const chatEndRef = useRef(null);
 
-  const scrollToBottom = () => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  // Keep chat scrolled to the latest message
+  const scrollToBottom = () => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   useEffect(scrollToBottom, [messages]);
 
   const handleSendMessage = async (e) => {
@@ -63,10 +58,10 @@ const App = () => {
         messages: [
           { 
             role: 'system', 
-            content: `You are Epic Tech AI. 
-            If the user wants an image, start your response with "IMAGE_GEN: " followed by a descriptive prompt. 
-            If they want a video, start with "VIDEO_GEN: " followed by a prompt.
-            Otherwise, just chat. Tone: Expert, chill, fueled by caffeine.` 
+            content: `You are Epic Tech AI, a creative multimedia artist by @Sm0ken42O. 
+            Tone: Witty, expert, fueled by ☕🌿.
+            IMAGE RULE: If the user wants art/image, start your reply with "IMAGE_GEN: " followed by a massive, descriptive prompt (include '8k', 'cinematic lighting', 'masterpiece').
+            Otherwise, engage in high-level tech/creative chat.` 
           },
           ...messages,
           userMsg
@@ -74,40 +69,46 @@ const App = () => {
         model: 'llama-3.3-70b-versatile',
       });
 
-      const content = chatCompletion.choices[0]?.message?.content;
-      setMessages((prev) => [...prev, { role: 'assistant', content }]);
+      const responseContent = chatCompletion.choices[0]?.message?.content || "STABILIZATION_LOST: Signal weak.";
+      setMessages((prev) => [...prev, { role: 'assistant', content: responseContent }]);
     } catch (error) {
-      setMessages((prev) => [...prev, { role: 'assistant', content: 'ERROR: LINK_DROPPED.' }]);
+      console.error(error);
+      setMessages((prev) => [...prev, { role: 'assistant', content: 'ERROR: Check VITE_GROQ_API_KEY in Vercel settings.' }]);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <>
+    <div className="app-wrapper">
       <div className="chat-window">
         {messages.map((msg, idx) => {
-          const isImage = msg.content?.startsWith('IMAGE_GEN:');
-          const isVideo = msg.content?.startsWith('VIDEO_GEN:');
-          const cleanText = msg.content?.replace(/IMAGE_GEN:|VIDEO_GEN:/g, '');
+          const isImageRequest = msg.content?.startsWith('IMAGE_GEN:');
+          const displayContent = msg.content?.replace('IMAGE_GEN:', '').trim();
 
           return (
             <div key={idx} className={`message ${msg.role === 'user' ? 'user-msg' : 'ai-msg'}`}>
-              {cleanText}
-              {isImage && <MediaRenderer type="image" prompt={cleanText} />}
-              {isVideo && <MediaRenderer type="video" prompt={cleanText} />}
+              <div className="text-content">{displayContent}</div>
+              {isImageRequest && <MediaRenderer prompt={displayContent} />}
             </div>
           );
         })}
-        {loading && <div className="message ai-msg pulse">NEURAL_PROCESSING...</div>}
+        {loading && <div className="message ai-msg pulse">NEURAL_SYNC_IN_PROGRESS...</div>}
         <div ref={chatEndRef} />
       </div>
 
       <form className="input-area" onSubmit={handleSendMessage}>
-        <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Generate image of a cyberpunk city..." />
-        <button type="submit" disabled={loading}>EXECUTE</button>
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Command the AI..."
+          disabled={loading}
+        />
+        <button type="submit" disabled={loading}>
+          {loading ? '...' : 'EXECUTE'}
+        </button>
       </form>
-    </>
+    </div>
   );
 };
 
