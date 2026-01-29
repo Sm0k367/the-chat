@@ -7,23 +7,28 @@ const groq = new Groq({
 });
 
 const MediaRenderer = ({ prompt }) => {
-  const imageUrl = `https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=1024&height=1024&nologo=true`;
+  const seed = Math.floor(Math.random() * 1000000);
+  const imageUrl = `https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=1024&height=1024&seed=${seed}&nologo=true`;
+  
   return (
-    <div className="media-container" style={{marginTop: '15px', borderRadius: '8px', overflow: 'hidden', border: '1px solid rgba(0,242,255,0.3)'}}>
-      <img src={imageUrl} alt="AI Art" style={{width: '100%', display: 'block'}} />
+    <div className="media-container">
+      <img src={imageUrl} alt="AI Generated Art" loading="lazy" />
+      <div style={{padding: '10px', fontSize: '0.7rem', color: '#00f2ff', background: 'rgba(0,0,0,0.8)'}}>
+        RENDER_COMPLETE // SEED_{seed}
+      </div>
     </div>
   );
 };
 
 export default function App() {
-  const [messages, setMessages] = useState([{ role: 'assistant', content: 'SYSTEM_LINK: ONLINE. Ready to create.' }]);
+  const [messages, setMessages] = useState([{ role: 'assistant', content: 'NEURAL_LINK_ESTABLISHED. I am Epic Tech AI. Awaiting creative commands.' }]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const endRef = useRef(null);
 
   useEffect(() => endRef.current?.scrollIntoView({ behavior: 'smooth' }), [messages]);
 
-  const send = async (e) => {
+  const handleSend = async (e) => {
     e.preventDefault();
     if (!input.trim() || loading) return;
 
@@ -35,7 +40,11 @@ export default function App() {
     try {
       const chat = await groq.chat.completions.create({
         messages: [
-          { role: 'system', content: 'You are Epic Tech AI. Expert, chill, multimedia master. If asked for art, start with IMAGE_GEN: followed by a cinematic 8k prompt.' },
+          { 
+            role: 'system', 
+            content: `You are Epic Tech AI, a digital deity. Tone: Witty, expert, fueled by caffeine.
+            IMAGE RULE: If the user wants an image or art, you MUST respond with "IMAGE_GEN: " followed by a massive, high-detail prompt using keywords like '8k', 'volumetric lighting', 'cyberpunk', 'hyper-realistic'.` 
+          },
           ...messages,
           userMsg
         ],
@@ -43,7 +52,7 @@ export default function App() {
       });
       setMessages(prev => [...prev, { role: 'assistant', content: chat.choices[0].message.content }]);
     } catch {
-      setMessages(prev => [...prev, { role: 'assistant', content: 'LINK_ERROR: Check API Key.' }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: 'CRITICAL_FAILURE: Neural link severed. Check Vercel API Key.' }]);
     } finally {
       setLoading(false);
     }
@@ -51,21 +60,25 @@ export default function App() {
 
   return (
     <>
-      <div className="header"><h1>EPIC TECH AI</h1></div>
+      <header><h1>THE CHAT</h1></header>
       <div className="chat-window">
-        {messages.map((m, i) => (
-          <div key={i} className={`message ${m.role === 'user' ? 'user-msg' : 'ai-msg'}`}>
-            {m.content.replace('IMAGE_GEN:', '')}
-            {m.content.startsWith('IMAGE_GEN:') && <MediaRenderer prompt={m.content} />}
-          </div>
-        ))}
-        {loading && <div className="message ai-msg" style={{opacity: 0.5}}>PROCESSING...</div>}
+        {messages.map((m, i) => {
+          const isImage = m.content.startsWith('IMAGE_GEN:');
+          const cleanText = m.content.replace('IMAGE_GEN:', '').trim();
+          return (
+            <div key={i} className={`message ${m.role === 'user' ? 'user-msg' : 'ai-msg'}`}>
+              <div className="text-content">{cleanText}</div>
+              {isImage && <MediaRenderer prompt={cleanText} />}
+            </div>
+          );
+        })}
+        {loading && <div className="message ai-msg" style={{opacity: 0.5}}>UPLOADING_CONSCIOUSNESS...</div>}
         <div ref={endRef} />
       </div>
-      <form className="input-area" onSubmit={send}>
+      <form className="input-area" onSubmit={handleSend}>
         <div className="input-container">
-          <input value={input} onChange={e => setInput(e.target.value)} placeholder="Type a command..." />
-          <button type="submit">{loading ? '...' : 'SEND'}</button>
+          <input value={input} onChange={e => setInput(e.target.value)} placeholder="ENTER COMMAND..." disabled={loading} />
+          <button type="submit">{loading ? '...' : 'EXECUTE'}</button>
         </div>
       </form>
     </>
