@@ -4,6 +4,18 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>THE CHAT | Epic Tech AI</title>
+    <style>
+      body { background-color: #050505; margin: 0; }
+      #root:empty::before {
+        content: "INITIALIZING_SYSTEM...";
+        color: #00f2ff;
+        font-family: monospace;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
